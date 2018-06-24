@@ -1,0 +1,122 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>XRB Jump and Grab</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+	<script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<script type="text/javascript">
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game'), Start = function () {};
+
+var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+console.log('Connecting..');
+socket.emit('connected', {data: 'I\'m connected!'});
+console.log('Connected');
+console.log(this.socket.sessionid);
+
+var player;
+var platforms;
+var cursors;
+
+var stars;
+var killer_star;
+var score = 0;
+var scoreText;
+var time_left;
+var timeText;
+var xrb_address;
+
+Start.prototype = {
+preload: function () {
+
+    game.load.image('sky', 'assets/sky.png');
+    game.load.image('ground', 'assets/platform.png');
+    game.load.image('star', 'assets/star.png');
+    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+    game.load.image('baddie', 'assets/diamond.png');
+    game.load.image('start_button', 'assets/playgame.png');
+    game.load.image('submit_button', 'assets/playgame.png');
+    game.load.image('demo_button', 'assets/freedemo.png');
+    game.load.image('score_button', 'assets/scorepage.png');
+    game.load.script('end',  'End.js');
+    game.load.script('main',  'Main.js');
+    game.load.script('load', 'Load.js');
+    game.load.script('demo', 'Demo.js');
+},
+
+create: function () {
+
+    socket.on('connect', function() {
+     socket.emit('connected', {data: 'I\'m connected!'});
+     console.log('Connected');
+    });
+
+    //  We're going to be using physics, so enable the Arcade Physics system
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+
+    game.state.add('End', End);
+    game.state.add('Demo', Demo);
+    game.state.add('Main', Main);
+    game.state.add('Load', Load);
+
+    game.stage.disableVisibilityChange = true;
+
+    //  A simple background for our game
+    game.add.sprite(0, 0, 'sky');
+
+    var edgeX = game.world.centerX - 390
+    var edgeY = game.world.centerY - 200
+    welcome1Text = game.add.text(edgeX, edgeY, 'Welcome to XRB Jump and Grab', { fontSize: '32px', fill: 'white' });
+
+    button = game.add.button(edgeX, edgeY + 80, 'start_button', this.actionOnClick, this, 2, 1, 0);
+    d_button = game.add.button(edgeX + 250, edgeY + 80, 'demo_button', this.DactionOnClick, this, 2, 1, 0);
+    s_button = game.add.button(edgeX + 500, edgeY + 80, 'score_button', this.ScoreactionOnClick, this, 2, 1, 0);
+    welcome4Text = game.add.text(edgeX, edgeY + 260, 'Costs 1XRB for unlimited plays in a single session', { fontSize: '32px', fill: 'white' });
+    welcome5Text = game.add.text(edgeX, edgeY + 300, 'Collect stars and diamonds to get points', { fontSize: '32px', fill: 'white' });
+    welcome6Text = game.add.text(edgeX, edgeY + 340, 'Try and get the highest score in 5 minutes!', { fontSize: '32px', fill: 'white' });
+    rules1Text = game.add.text(edgeX, edgeY + 380, 'Every 12hrs prizes for top scorer, top total score and', { fontSize: '32px', fill: 'white' });
+    rules2Text = game.add.text(edgeX, edgeY + 420, 'a random player', { fontSize: '32px', fill: 'white' });
+},
+
+actionOnClick: function() {
+   console.log('Button pressed');
+   xrb_address = prompt("Please enter your xrb address", "address");
+   if (xrb_address.length != 64 || xrb_address.substring(0, 4) != 'xrb_') {
+       window.alert("Incorrect Address");
+//       location.reload();
+       game.state.start('Start');
+   }
+   else {
+       score = 0;
+       socket.emit('register', {address: xrb_address});
+      game.state.start('Load');
+   }
+},
+
+ScoreactionOnClick: function() {
+   console.log('Score Button pressed');
+   var win = window.open('http://stats.yapraiwallet.space/score', '_blank');
+   win.focus();
+},
+
+DactionOnClick: function() {
+   console.log('Demo Button pressed');
+   score = 0;
+   game.state.start('Demo');
+}}
+
+game.state.add('Start', Start);
+game.state.start('Start');
+
+</script>
+</body>
+</html>
